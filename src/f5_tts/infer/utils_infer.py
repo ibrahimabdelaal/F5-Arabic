@@ -238,7 +238,7 @@ def preprocess_ref_audio_text(ref_audio_orig, ref_text, clip_short=True, show_in
     show_info("Converting audio...")
     with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as f:
         aseg = AudioSegment.from_file(ref_audio_orig)
-
+        
         if clip_short:
             # 1. try to find long silence for clipping
             non_silent_segs = silence.split_on_silence(

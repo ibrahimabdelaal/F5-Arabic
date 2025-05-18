@@ -100,7 +100,7 @@ def infer(
     if not gen_text.endswith(". "):
         gen_text += ". "   
         gen_text = gen_text.lower()
-    gen_text = convert_number_to_text(gen_text)
+    #gen_text = convert_number_to_text(gen_text)
 
     final_wave, final_sample_rate, combined_spectrogram = infer_process(
         ref_audio,
