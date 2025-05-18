@@ -141,7 +141,7 @@ if __name__ == "__main__":
 
     wav, sr, spect = f5tts.infer(
         ref_file=str(files("f5_tts").joinpath("infer/examples/basic/basic_ara.wav")),
-        ref_text="وَلَا تَحْسَبَنَّ الَّذِينَ قُتِلُوا فِي سَبِيلِ اللَّهِ أَمْوَاتًا بَلْ أَحْيَاءٌ عِنْدَ رَبِّهِمْ يُرْزَقُونَ""",
+        ref_text="وَلَا تَحْسَبَنَّ الَّذِينَ قُتِلُوا فِي سَبِيلِ اللَّهِ أَمْوَاتًا بَلْ أَحْيَاءٌ عِنْدَ رَبِّهِمْ يُرْزَقُونَ"",
         file_wave=str(files("f5_tts").joinpath("../../tests/api_out.wav")),
         file_spect=str(files("f5_tts").joinpath("../../tests/api_out.png")),
         seed=-1,  # random seed = -1

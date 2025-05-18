@@ -42,10 +42,10 @@ win_length = 1024
 n_fft = 1024
 mel_spec_type = "vocos"
 target_rms = 0.1
-cross_fade_duration = 0.15
+cross_fade_duration = 0.1  # Reduced from 0.15 for better transitions
 ode_method = "euler"
-nfe_step = 64  # 16, 32
-cfg_strength = 2.0
+nfe_step = 32  # Reduced from 64 to 32 for better Arabic audio quality
+cfg_strength = 1.5  # Reduced from 2.0 to 1.5 for better Arabic audio quality
 sway_sampling_coef = -1.0
 speed = 1.0
 fix_duration = None
@@ -215,7 +215,7 @@ def load_model(
     return model
 
 
-def remove_silence_edges(audio, silence_threshold=-42):
+def remove_silence_edges(audio, silence_threshold=-32):
     # Remove silence from the start
     non_silent_start_idx = silence.detect_leading_silence(audio, silence_threshold=silence_threshold)
     audio = audio[non_silent_start_idx:]
@@ -238,41 +238,9 @@ def preprocess_ref_audio_text(ref_audio_orig, ref_text, clip_short=True, show_in
     show_info("Converting audio...")
     with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as f:
         aseg = AudioSegment.from_file(ref_audio_orig)
-        clip_short = False
-        if clip_short:
-            # 1. try to find long silence for clipping
-            non_silent_segs = silence.split_on_silence(
-                aseg, min_silence_len=1000, silence_thresh=-50, keep_silence=1000, seek_step=10
-            )
-            non_silent_wave = AudioSegment.silent(duration=0)
-            for non_silent_seg in non_silent_segs:
-                if len(non_silent_wave) > 6000 and len(non_silent_wave + non_silent_seg) > 15000:
-                    show_info("Audio is over 15s, clipping short. (1)")
-                    print("Audio is over 15s, clipping short. (1)")
-                    break
-                non_silent_wave += non_silent_seg
-
-            # 2. try to find short silence for clipping if 1. failed
-            if len(non_silent_wave) > 15000:
-                non_silent_segs = silence.split_on_silence(
-                    aseg, min_silence_len=100, silence_thresh=-40, keep_silence=1000, seek_step=10
-                )
-                non_silent_wave = AudioSegment.silent(duration=0)
-                for non_silent_seg in non_silent_segs:
-                    if len(non_silent_wave) > 6000 and len(non_silent_wave + non_silent_seg) > 15000:
-                        show_info("Audio is over 15s, clipping short. (2)")
-                        print("Audio is over 15s, clipping short. (2)")
-                        break
-                    non_silent_wave += non_silent_seg
-
-            aseg = non_silent_wave
-
-            # 3. if no proper silence found for clipping
-            if len(aseg) > 15000:
-                aseg = aseg[:15000]
-                show_info("Audio is over 15s, clipping short. (3)")
-
-        aseg = remove_silence_edges(aseg) + AudioSegment.silent(duration=50)
+        # Disabled all audio processing - using original audio
+        # No clipping
+        # No silence removal
         aseg.export(f.name, format="wav")
         ref_audio = f.name
 
@@ -379,9 +347,9 @@ def infer_batch_process(
     mel_spec_type="vocos",
     progress=tqdm,
     target_rms=0.1,
-    cross_fade_duration=0.15,
-    nfe_step=64,
-    cfg_strength=2.0,
+    cross_fade_duration=0.1,
+    nfe_step=32,
+    cfg_strength=1.5,
     sway_sampling_coef=-1,
     speed=1,
     fix_duration=None,

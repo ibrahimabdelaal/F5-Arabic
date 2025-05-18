@@ -95,12 +95,13 @@ def infer(
 
     ema_model = F5TTS_ema_model
 
-    if not gen_text.startswith(" "):
-        gen_text = " " + gen_text
-    if not gen_text.endswith(". "):
-        gen_text += ". "   
-        gen_text = gen_text.lower()
-    #gen_text = convert_number_to_text(gen_text)
+    # For Arabic text, don't lowercase (Arabic doesn't have case)
+    # Arabic-specific preprocessing - convert numbers to text
+    gen_text = convert_number_to_text(gen_text)
+    
+    # Use proper Arabic punctuation handling
+    if not gen_text.endswith(".") and not gen_text.endswith("؟") and not gen_text.endswith("!") and not gen_text.endswith("،") and not gen_text.endswith("؛"):
+        gen_text += "."
 
     final_wave, final_sample_rate, combined_spectrogram = infer_process(
         ref_audio,
@@ -415,9 +416,10 @@ with gr.Blocks() as app_multistyle:
                 current_style = "Regular"
 
             ref_audio = speech_types[current_style]["audio"]
-            ref_text = speech_types[current_style].get("ref_text", "")
-
-            # Generate speech for this segment
+            ref_text = speech_types[current_style].get("ref_text", "")            # Generate speech for this segment
+            text = convert_number_to_text(text)
+            if not text.endswith(".") and not text.endswith("؟") and not text.endswith("!") and not text.endswith("،") and not text.endswith("؛"):
+                text += "."
             audio, _ = infer(
                 ref_audio, ref_text, text, model_choice, remove_silence, 0, show_info=print
             )  # show_info=print no pull to top when generating
