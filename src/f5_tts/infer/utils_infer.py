@@ -238,7 +238,7 @@ def preprocess_ref_audio_text(ref_audio_orig, ref_text, clip_short=True, show_in
     show_info("Converting audio...")
     with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as f:
         aseg = AudioSegment.from_file(ref_audio_orig)
-        
+        clip_short = False
         if clip_short:
             # 1. try to find long silence for clipping
             non_silent_segs = silence.split_on_silence(
@@ -248,6 +248,7 @@ def preprocess_ref_audio_text(ref_audio_orig, ref_text, clip_short=True, show_in
             for non_silent_seg in non_silent_segs:
                 if len(non_silent_wave) > 6000 and len(non_silent_wave + non_silent_seg) > 15000:
                     show_info("Audio is over 15s, clipping short. (1)")
+                    print("Audio is over 15s, clipping short. (1)")
                     break
                 non_silent_wave += non_silent_seg
 
@@ -260,6 +261,7 @@ def preprocess_ref_audio_text(ref_audio_orig, ref_text, clip_short=True, show_in
                 for non_silent_seg in non_silent_segs:
                     if len(non_silent_wave) > 6000 and len(non_silent_wave + non_silent_seg) > 15000:
                         show_info("Audio is over 15s, clipping short. (2)")
+                        print("Audio is over 15s, clipping short. (2)")
                         break
                     non_silent_wave += non_silent_seg
 
@@ -282,14 +284,18 @@ def preprocess_ref_audio_text(ref_audio_orig, ref_text, clip_short=True, show_in
     global _ref_audio_cache
     if audio_hash in _ref_audio_cache:
         # Use cached reference text
+
         show_info("Using cached reference text...")
         ref_text = _ref_audio_cache[audio_hash]
+        show_info("Using cached reference text...")
+        print("Using cached reference text...",ref_text)
     else:
         if not ref_text.strip():
             global asr_pipe
             if asr_pipe is None:
                 initialize_asr_pipeline(device=device)
             show_info("No reference text provided, transcribing reference audio...")
+            print("No reference text provided, transcribing reference audio...")
             ref_text = asr_pipe(
                 ref_audio,
                 chunk_length_s=30,
@@ -374,7 +380,7 @@ def infer_batch_process(
     progress=tqdm,
     target_rms=0.1,
     cross_fade_duration=0.15,
-    nfe_step=32,
+    nfe_step=64,
     cfg_strength=2.0,
     sway_sampling_coef=-1,
     speed=1,
