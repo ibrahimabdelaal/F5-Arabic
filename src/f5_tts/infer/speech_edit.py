@@ -40,7 +40,7 @@ speed = 1.0
 
 if exp_name == "F5TTS_Base":
     model_cls = DiT
-    model_cfg = dict(dim=1024, depth=22, heads=16, ff_mult=2, text_dim=512, conv_layers=4)
+    model_cfg = dict(dim=1024, depth=22, heads=16, ff_mult=2, text_dim=512, conv_layers=6)
 
 elif exp_name == "E2TTS_Base":
     model_cls = UNetT

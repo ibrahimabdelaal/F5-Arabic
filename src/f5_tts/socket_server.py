@@ -15,12 +15,10 @@ from model.backbones.dit import DiT
 
 class TTSStreamingProcessor:
     def __init__(self, ckpt_file, vocab_file, ref_audio, ref_text, device=None, dtype=torch.float32):
-        self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
-
-        # Load the model using the provided checkpoint and vocab files
+        self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")        # Load the model using the provided checkpoint and vocab files
         self.model = load_model(
             model_cls=DiT,
-            model_cfg=dict(dim=1024, depth=22, heads=16, ff_mult=2, text_dim=512, conv_layers=4),
+            model_cfg=dict(dim=1024, depth=22, heads=16, ff_mult=2, text_dim=512, conv_layers=6),
             ckpt_path=ckpt_file,
             mel_spec_type="vocos",  # or "bigvgan" depending on vocoder
             vocab_file=vocab_file,

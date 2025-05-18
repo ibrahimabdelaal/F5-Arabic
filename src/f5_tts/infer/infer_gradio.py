@@ -42,9 +42,11 @@ vocoder = load_vocoder()
 
 
 # load models
-F5TTS_model_cfg = dict(dim=1024, depth=22, heads=16, ff_mult=2, text_dim=512, conv_layers=4)
+F5TTS_model_cfg = dict(dim=1024, depth=22, heads=16, ff_mult=2, text_dim=512, conv_layers=6)
 F5TTS_ema_model = load_model(
-    DiT, F5TTS_model_cfg, str(cached_path("hf://jpgallegoar/F5-Spanish/model_1200000.safetensors"))
+    DiT, F5TTS_model_cfg, str(cached_path("hf://Ar-tts-weights/F5-tts-weights/model_502500.pt")),
+    vocab_file=str(cached_path("hf://IbrahimSalah/F5-TTS-Arabic/vocab.txt")),
+    use_ema=False
 )
 
 chat_model_state = None
@@ -73,17 +75,17 @@ def generate_response(messages, model, tokenizer):
     ]
     return tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
 
-def traducir_numero_a_texto(texto):
-    texto_separado = re.sub(r'([A-Za-z])(\d)', r'\1 \2', texto)
-    texto_separado = re.sub(r'(\d)([A-Za-z])', r'\1 \2', texto_separado)
+def convert_number_to_text(text):
+    text_separated = re.sub(r'([A-Za-z\u0600-\u06FF])(\d)', r'\1 \2', text)
+    text_separated = re.sub(r'(\d)([A-Za-z\u0600-\u06FF])', r'\1 \2', text_separated)
     
-    def reemplazar_numero(match):
-        numero = match.group()
-        return num2words(int(numero), lang='es')
+    def replace_number(match):
+        number = match.group()
+        return num2words(int(number), lang='ar')
 
-    texto_traducido = re.sub(r'\b\d+\b', reemplazar_numero, texto_separado)
+    translated_text = re.sub(r'\b\d+\b', replace_number, text_separated)
 
-    return texto_traducido
+    return translated_text
 
 @gpu_decorator
 def infer(
@@ -96,10 +98,9 @@ def infer(
     if not gen_text.startswith(" "):
         gen_text = " " + gen_text
     if not gen_text.endswith(". "):
-        gen_text += ". "
-
-    gen_text = gen_text.lower()
-    gen_text = traducir_numero_a_texto(gen_text)
+        gen_text += ". "   
+        gen_text = gen_text.lower()
+    gen_text = convert_number_to_text(gen_text)
 
     final_wave, final_sample_rate, combined_spectrogram = infer_process(
         ref_audio,
@@ -131,50 +132,50 @@ def infer(
 
 with gr.Blocks() as app_credits:
     gr.Markdown("""
-# Créditos
+# الاعتمادات
 
-* [mrfakename](https://github.com/fakerybakery) por el [demo online original](https://huggingface.co/spaces/mrfakename/E2-F5-TTS)
-* [RootingInLoad](https://github.com/RootingInLoad) por la generación inicial de fragmentos y exploración de la aplicación de podcast
-* [jpgallegoar](https://github.com/jpgallegoar) por la generación de múltiples tipos de habla, chat de voz y afinación en español
+* [mrfakename](https://github.com/fakerybakery) للعرض التوضيحي [الأصلي عبر الإنترنت](https://huggingface.co/spaces/mrfakename/E2-F5-TTS)
+* [RootingInLoad](https://github.com/RootingInLoad) للتوليد الأولي للمقاطع واستكشاف تطبيق البودكاست
+* [IbrahimSalah](https://github.com/IbrahimSalah) لتوليد النموذج العربي وضبط الصوت باللغة العربية
 """)
 
 
 with gr.Blocks() as app_tts:
-    gr.Markdown("# TTS por Lotes")
-    ref_audio_input = gr.Audio(label="Audio de Referencia", type="filepath")
-    gen_text_input = gr.Textbox(label="Texto para Generar", lines=10)
-    model_choice = gr.Radio(choices=["F5-TTS"], label="Seleccionar Modelo TTS", value="F5-TTS")
-    generate_btn = gr.Button("Sintetizar", variant="primary")
-    with gr.Accordion("Configuraciones Avanzadas", open=False):
+    gr.Markdown("# تحويل النص إلى كلام")
+    ref_audio_input = gr.Audio(label="الصوت المرجعي", type="filepath", value="E:\\new_f5\\Arabic-f5\\src\\f5_tts\\infer\\examples\\basic\\basic_ara.wav")
+    gen_text_input = gr.Textbox(label="النص المراد تحويله", lines=10)
+    model_choice = gr.Radio(choices=["F5-TTS"], label="اختر نموذج تحويل النص إلى كلام", value="F5-TTS")
+    generate_btn = gr.Button("توليد", variant="primary")
+    with gr.Accordion("إعدادات متقدمة", open=False):
         ref_text_input = gr.Textbox(
-            label="Texto de Referencia",
-            info="Deja en blanco para transcribir automáticamente el audio de referencia. Si ingresas texto, sobrescribirá la transcripción automática.",
+            label="النص المرجعي",
+            info="اترك هذا الحقل فارغًا للنسخ التلقائي للصوت المرجعي. إذا أدخلت نصًا، فسيتم تجاوز النسخ التلقائي.",
             lines=2,
+            value="وَلَا تَحْسَبَنَّ الَّذِينَ قُتِلُوا فِي سَبِيلِ اللَّهِ أَمْوَاتًا بَلْ أَحْيَاءٌ عِنْدَ رَبِّهِمْ يُرْزَقُونَ"
         )
         remove_silence = gr.Checkbox(
-            label="Eliminar Silencios",
-            info="El modelo tiende a producir silencios, especialmente en audios más largos. Podemos eliminar manualmente los silencios si es necesario. Ten en cuenta que esta es una característica experimental y puede producir resultados extraños. Esto también aumentará el tiempo de generación.",
+            label="إزالة الصمت",
+            info="يميل النموذج إلى إنتاج فترات صمت، خاصة في المقاطع الصوتية الطويلة. يمكننا إزالة الصمت يدويًا إذا لزم الأمر. تذكر أن هذه ميزة تجريبية وقد تنتج نتائج غريبة. سيزيد هذا أيضًا من وقت التوليد.",
             value=False,
         )
         speed_slider = gr.Slider(
-            label="Velocidad",
+            label="السرعة",
             minimum=0.3,
             maximum=2.0,
             value=1.0,
             step=0.1,
-            info="Ajusta la velocidad del audio.",
+            info="ضبط سرعة الصوت.",
         )
         cross_fade_duration_slider = gr.Slider(
-            label="Duración del Cross-Fade (s)",
+            label="مدة التلاشي المتقاطع (ثوانٍ)",
             minimum=0.0,
             maximum=1.0,
             value=0.15,
             step=0.01,
-            info="Establece la duración del cross-fade entre clips de audio.",
-        )
-
-    audio_output = gr.Audio(label="Audio Sintetizado")
-    spectrogram_output = gr.Image(label="Espectrograma")
+            info="تحديد مدة التلاشي المتقاطع بين المقاطع الصوتية.",
+        )    
+    audio_output = gr.Audio(label="الصوت المولد")
+    spectrogram_output = gr.Image(label="مخطط الطيف")
 
     generate_btn.click(
         infer,
@@ -220,32 +221,31 @@ with gr.Blocks() as app_multistyle:
     # New section for multistyle generation
     gr.Markdown(
         """
-    # Generación de Múltiples Tipos de Habla
+    # توليد أنماط متعددة من الكلام
 
-    Esta sección te permite generar múltiples tipos de habla o las voces de múltiples personas. Ingresa tu texto en el formato mostrado a continuación, y el sistema generará el habla utilizando el tipo apropiado. Si no se especifica, el modelo utilizará el tipo de habla regular. El tipo de habla actual se usará hasta que se especifique el siguiente tipo de habla.
+    يتيح لك هذا القسم إنشاء أنماط متعددة من الكلام أو أصوات أشخاص متعددين. أدخل النص بالتنسيق الموضح أدناه، وسيقوم النظام بتوليد الكلام باستخدام النمط المناسب. إذا لم يتم تحديد نمط، سيستخدم النموذج نمط الكلام العادي. سيتم استخدام نمط الكلام الحالي حتى يتم تحديد نمط الكلام التالي.
     """
-    )
-
+    )   
     with gr.Row():
         gr.Markdown(
             """
-            **Entrada de Ejemplo:**                                                                      
-            {Regular} Hola, me gustaría pedir un sándwich, por favor.                                                         
-            {Sorprendido} ¿Qué quieres decir con que no tienen pan?                                                                      
-            {Triste} Realmente quería un sándwich...                                                              
-            {Enojado} ¡Sabes qué, maldición a ti y a tu pequeña tienda!                                                                       
-            {Susurro} Solo volveré a casa y lloraré ahora.                                                                           
-            {Gritando} ¿Por qué yo?!                                                                         
+            **مثال إدخال:**                                                                      
+            {عادي} مرحبًا، أود طلب شطيرة من فضلك.                                                         
+            {متفاجئ} ماذا تقصد بأنه لا يوجد لديكم خبز؟                                                                      
+            {حزين} كنت أريد حقًا شطيرة...                                                              
+            {غاضب} تعرف ماذا، لعنة عليك وعلى متجرك الصغير!                                                                       
+            {هامس} سأعود إلى المنزل وأبكي الآن.                                                                           
+            {صارخ} لماذا أنا؟!                                                                         
             """
         )
 
         gr.Markdown(
             """
-            **Entrada de Ejemplo 2:**                                                                                
-            {Speaker1_Feliz} Hola, me gustaría pedir un sándwich, por favor.                                                            
-            {Speaker2_Regular} Lo siento, nos hemos quedado sin pan.                                                                                
-            {Speaker1_Triste} Realmente quería un sándwich...                                                                             
-            {Speaker2_Susurro} Te daré el último que estaba escondiendo.                                                                     
+            **مثال إدخال 2:**                                                                                
+            {متحدث1_سعيد} مرحبًا، أود طلب شطيرة من فضلك.                                                            
+            {متحدث2_عادي} آسف، لقد نفد الخبز لدينا.                                                                                
+            {متحدث1_حزين} كنت أريد حقًا شطيرة...                                                                             
+            {متحدث2_هامس} سأعطيك آخر واحدة كنت أخفيها.                                                                     
             """
         )
 
@@ -487,12 +487,12 @@ with gr.Blocks() as app_multistyle:
 with gr.Blocks() as app_chat:
     gr.Markdown(
         """
-# Chat de Voz
-¡Mantén una conversación con una IA usando tu voz de referencia! 
-1. Sube un clip de audio de referencia y opcionalmente su transcripción.
-2. Carga el modelo de chat.
-3. Graba tu mensaje a través de tu micrófono.
-4. La IA responderá usando la voz de referencia.
+# محادثة صوتية
+استمتع بمحادثة مع الذكاء الاصطناعي باستخدام صوتك المرجعي!
+1. قم بتحميل مقطع صوتي مرجعي واختياريًا نصه.
+2. قم بتحميل نموذج المحادثة.
+3. سجل رسالتك عبر الميكروفون.
+4. سيرد الذكاء الاصطناعي باستخدام الصوت المرجعي.
 """
     )
 
@@ -700,23 +700,23 @@ with gr.Blocks() as app_chat:
 with gr.Blocks() as app:
     gr.Markdown(
         """
-# Spanish-F5
+# Arabic-F5
 
-Esta es una interfaz web para F5 TTS, con un finetuning para poder hablar en castellano
+هذه واجهة ويب لنموذج F5 TTS، مع تعديل خاص للتحدث باللغة العربية
 
-Implementación original:
-* [F5-TTS](https://arxiv.org/abs/2410.06885) (A Fairytaler that Fakes Fluent and Faithful Speech with Flow Matching)
+التنفيذ الأصلي:
+* [F5-TTS](https://arxiv.org/abs/2410.06885) (نموذج يُحاكي الكلام السلس والطبيعي باستخدام تقنية Flow Matching)
 
-El modelo sólo soporta el castellano.
+هذا النموذج يدعم اللغة العربية فقط.
 
-Para los mejores resultados, intenta convertir tu audio de referencia a WAV o MP3, asegurarte de que duren entre 11 y 14 segundos, que comiencen y acaben con entre medio segundo y un segundo de silencio, y a ser posible que acabe con el final de la frase.
+للحصول على أفضل النتائج، حاول تحويل الصوت المرجعي إلى صيغة WAV أو MP3، وتأكد من أن مدته تتراوح بين 11 و14 ثانية، وأن يبدأ وينتهي بفترة صمت تتراوح بين نصف ثانية وثانية، ويفضل أن ينتهي بنهاية الجملة.
 
-**NOTA: El texto de referencia será transcrito automáticamente con Whisper si no se proporciona. Para mejores resultados, mantén tus clips de referencia cortos (<15s). Asegúrate de que el audio esté completamente subido antes de generar. Se utiliza la librería num2words para convertir los números a palabras.**
+**ملاحظة: سيتم نسخ النص المرجعي تلقائيًا باستخدام Whisper إذا لم يتم توفيره. للحصول على أفضل النتائج، احتفظ بمقاطع الصوت المرجعية قصيرة (<15 ثانية). تأكد من اكتمال تحميل الصوت قبل التوليد. يتم استخدام مكتبة num2words لتحويل الأرقام إلى كلمات.**
 """
     )
     gr.TabbedInterface(
         [app_tts, app_multistyle, app_chat, app_credits],
-        ["TTS", "Multi-Habla", "Chat de Voz", "Créditos"],
+        ["تحويل النص إلى كلام", "أنماط الكلام المتعددة", "محادثة صوتية", "اعتمادات"],
     )
 
 
