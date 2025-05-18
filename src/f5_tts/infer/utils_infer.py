@@ -88,16 +88,11 @@ def chunk_text(text, max_chars=135):
 
 # load vocoder
 def load_vocoder(vocoder_name="vocos", is_local=False, local_path="", device=device):
+    vocoder_name="vocos"
     if vocoder_name == "vocos":
-        if is_local:
-            print(f"Load vocos from local path {local_path}")
-            vocoder = Vocos.from_hparams(f"{local_path}/config.yaml")
-            state_dict = torch.load(f"{local_path}/pytorch_model.bin", map_location="cpu")
-            vocoder.load_state_dict(state_dict)
-            vocoder = vocoder.eval().to(device)
-        else:
-            print("Download Vocos from huggingface charactr/vocos-mel-24khz")
-            vocoder = Vocos.from_pretrained("charactr/vocos-mel-24khz").to(device)
+         print("Loading Vocos vocoder...")
+         vocoder = Vocos.from_pretrained("charactr/vocos-mel-24khz").to(device)
+    
     elif vocoder_name == "bigvgan":
         try:
             from third_party.BigVGAN import bigvgan
@@ -136,7 +131,8 @@ def initialize_asr_pipeline(device=device, dtype=None):
 # load model checkpoint for inference
 
 
-def load_checkpoint(model, ckpt_path, device, dtype=None, use_ema=True):
+def load_checkpoint(model, ckpt_path, device, dtype=None, use_ema=False):
+    use_ema=False
     if dtype is None:
         dtype = (
             torch.float16 if device == "cuda" and torch.cuda.get_device_properties(device).major >= 6 else torch.float32

@@ -142,7 +142,7 @@ with gr.Blocks() as app_credits:
 
 with gr.Blocks() as app_tts:
     gr.Markdown("# تحويل النص إلى كلام")
-    ref_audio_input = gr.Audio(label="الصوت المرجعي", type="filepath", value="E:\\new_f5\\Arabic-f5\\src\\f5_tts\\infer\\examples\\basic\\basic_ara.wav")
+    ref_audio_input = gr.Audio(label="الصوت المرجعي", type="filepath", value="src\\f5_tts\\infer\\examples\\basic\\basic_ara.wav")
     gen_text_input = gr.Textbox(label="النص المراد تحويله", lines=10)
     model_choice = gr.Radio(choices=["F5-TTS"], label="اختر نموذج تحويل النص إلى كلام", value="F5-TTS")
     generate_btn = gr.Button("توليد", variant="primary")
