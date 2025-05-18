@@ -78,7 +78,7 @@ fix_duration = [
 
 # -------------------------------------------------#
 
-use_ema = True
+use_ema = False
 
 if not os.path.exists(output_dir):
     os.makedirs(output_dir)

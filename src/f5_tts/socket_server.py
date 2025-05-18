@@ -23,7 +23,7 @@ class TTSStreamingProcessor:
             mel_spec_type="vocos",  # or "bigvgan" depending on vocoder
             vocab_file=vocab_file,
             ode_method="euler",
-            use_ema=True,
+            use_ema=False,
             device=self.device,
         ).to(self.device, dtype=dtype)
 
