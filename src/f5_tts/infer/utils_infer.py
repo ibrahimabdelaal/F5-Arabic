@@ -394,7 +394,7 @@ def infer_batch_process(
     rms = torch.sqrt(torch.mean(torch.square(audio)))
     if rms < target_rms:
         audio = audio * target_rms / rms
-    if sr != target_sample_rate:
+    if True:
         resampler = torchaudio.transforms.Resample(sr, target_sample_rate)
         audio = resampler(audio)
     audio = audio.to(device)
