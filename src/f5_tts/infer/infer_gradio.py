@@ -42,9 +42,9 @@ vocoder = load_vocoder()
 
 
 # load models
-F5TTS_model_cfg = dict(dim=1024, depth=22, heads=16, ff_mult=2, text_dim=512, conv_layers=6)
+F5TTS_model_cfg = dict(dim=1024, depth=22, heads=18, ff_mult=2, text_dim=512, conv_layers=8)
 F5TTS_ema_model = load_model(
-    DiT, F5TTS_model_cfg, str(cached_path("hf://Ar-tts-weights/F5-tts-weights/model_502500.pt")),
+    DiT, F5TTS_model_cfg, str(cached_path("hf://Ar-tts-weights/F5-tts-weights/model_507500_8_18.pt")),
     vocab_file=str(cached_path("hf://IbrahimSalah/F5-TTS-Arabic/vocab.txt")),
     use_ema=False
 )
