@@ -177,10 +177,10 @@ vocoder = load_vocoder(vocoder_name=mel_spec_type, is_local=args.load_vocoder_fr
 # load models
 if model == "F5-TTS":
     model_cls = DiT
-    model_cfg = dict(dim=1024, depth=22, heads=18, ff_mult=2, text_dim=512, conv_layers=8)
+    model_cfg = dict(dim=1024, depth=22, heads=16, ff_mult=2, text_dim=512, conv_layers=6)
     if ckpt_file == "":
         # Use Arabic model
-        ckpt_file = str(cached_path("hf://Ar-tts-weights/F5-tts-weights/model_507500_8_18.pt"))
+        ckpt_file = str(cached_path("hf://Ar-tts-weights/F5-tts-weights/455000.pt"))
         vocab_file = str(cached_path("hf://IbrahimSalah/F5-TTS-Arabic/vocab.txt"))
       
 elif model == "E2-TTS":
