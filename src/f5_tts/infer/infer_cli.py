@@ -9,6 +9,7 @@ import numpy as np
 import soundfile as sf
 import tomli
 from cached_path import cached_path
+from num2words import num2words
 
 from f5_tts.infer.utils_infer import (
     infer_process,
@@ -123,19 +124,23 @@ vocoder = load_vocoder(vocoder_name=mel_spec_type, is_local=args.load_vocoder_fr
 # load models
 if model == "F5-TTS":
     model_cls = DiT
-    model_cfg = dict(dim=1024, depth=22, heads=16, ff_mult=2, text_dim=512, conv_layers=4)
+    model_cfg = dict(dim=1024, depth=22, heads=18, ff_mult=2, text_dim=512, conv_layers=8)
     if ckpt_file == "":
-        if args.vocoder_name == "vocos":
-            repo_name = "F5-TTS"
-            exp_name = "F5TTS_Base"
-            ckpt_step = 1200000
-            ckpt_file = str(cached_path(f"hf://SWivid/{repo_name}/{exp_name}/model_{ckpt_step}.safetensors"))
-            # ckpt_file = f"ckpts/{exp_name}/model_{ckpt_step}.pt"  # .pt | .safetensors; local path
-        elif args.vocoder_name == "bigvgan":
-            repo_name = "F5-TTS"
-            exp_name = "F5TTS_Base_bigvgan"
-            ckpt_step = 1250000
-            ckpt_file = str(cached_path(f"hf://SWivid/{repo_name}/{exp_name}/model_{ckpt_step}.pt"))
+        # Use Arabic model
+        ckpt_file = str(cached_path("hf://Ar-tts-weights/F5-tts-weights/model_507500_8_18.pt"))
+        if not vocab_file:
+            vocab_file = str(cached_path("hf://IbrahimSalah/F5-TTS-Arabic/vocab.txt"))
+        # Original models commented out for reference
+        # if args.vocoder_name == "vocos":
+        #     repo_name = "F5-TTS"
+        #     exp_name = "F5TTS_Base"
+        #     ckpt_step = 1200000
+        #     ckpt_file = str(cached_path(f"hf://SWivid/{repo_name}/{exp_name}/model_{ckpt_step}.safetensors"))
+        # elif args.vocoder_name == "bigvgan":
+        #     repo_name = "F5-TTS"
+        #     exp_name = "F5TTS_Base_bigvgan"
+        #     ckpt_step = 1250000
+        #     ckpt_file = str(cached_path(f"hf://SWivid/{repo_name}/{exp_name}/model_{ckpt_step}.pt"))
 
 elif model == "E2-TTS":
     model_cls = UNetT
@@ -190,6 +195,14 @@ def main_process(ref_audio, ref_text, text_gen, model_obj, mel_spec_type, remove
             voice = "main"
         text = re.sub(reg2, "", text)
         gen_text = text.strip()
+        
+        # Apply Arabic preprocessing - convert numbers to Arabic words
+        gen_text = convert_number_to_text(gen_text)
+        
+        # Add proper Arabic punctuation if missing
+        if not gen_text.endswith(".") and not gen_text.endswith("؟") and not gen_text.endswith("!") and not gen_text.endswith("،") and not gen_text.endswith("؛"):
+            gen_text += "."
+            
         ref_audio = voices[voice]["ref_audio"]
         ref_text = voices[voice]["ref_text"]
         print(f"Voice: {voice}")
@@ -214,6 +227,20 @@ def main_process(ref_audio, ref_text, text_gen, model_obj, mel_spec_type, remove
 
 def main():
     main_process(ref_audio, ref_text, gen_text, ema_model, mel_spec_type, remove_silence, speed)
+
+
+def convert_number_to_text(text):
+    """Convert numbers in text to Arabic words"""
+    text_separated = re.sub(r'([A-Za-z\u0600-\u06FF])(\d)', r'\1 \2', text)
+    text_separated = re.sub(r'(\d)([A-Za-z\u0600-\u06FF])', r'\1 \2', text_separated)
+    
+    def replace_number(match):
+        number = match.group()
+        return num2words(int(number), lang='ar')
+
+    translated_text = re.sub(r'\b\d+\b', replace_number, text_separated)
+
+    return translated_text
 
 
 if __name__ == "__main__":
