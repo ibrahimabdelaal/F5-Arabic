@@ -72,6 +72,7 @@ def preprocess_ref_audio_text(ref_audio_orig, ref_text, clip_short=True, show_in
 f5_tts.infer.utils_infer.preprocess_ref_audio_text = preprocess_ref_audio_text
 
 from f5_tts.model import DiT, UNetT
+import shutil
 
 parser = argparse.ArgumentParser(
     prog="python3 infer-cli.py",
@@ -176,6 +177,7 @@ vocoder = load_vocoder(vocoder_name=mel_spec_type, is_local=args.load_vocoder_fr
 
 # load models
 if model == "F5-TTS":
+    print("Using F5-TTS...")
     model_cls = DiT
     model_cfg = dict(dim=1024, depth=22, heads=16, ff_mult=2, text_dim=512, conv_layers=6)
     if ckpt_file == "":
@@ -246,6 +248,21 @@ def main_process(ref_audio, ref_text, text_gen, model_obj, mel_spec_type, remove
             gen_text += "."
             
         ref_audio = voices[voice]["ref_audio"]
+        
+        # Save a copy of the reference audio to the output folder
+        # Ensure output_dir is at the root of the filesystem
+        #output_dir = os.path.join(os.path.abspath(os.sep), os.path.basename(output_dir))
+        
+        # Create the directory if it doesn't exist
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+            
+        ref_audio_filename = os.path.basename(ref_audio)
+        ref_audio_output_path = os.path.join(output_dir, f"ref_audio_{voice}_{ref_audio_filename}")
+        
+        # Copy the reference audio file
+        shutil.copy2(ref_audio, ref_audio_output_path)
+        print(f"Saved reference audio to: {ref_audio_output_path}")
         ref_text = voices[voice]["ref_text"]
         print(f"Voice: {voice}")
         audio, final_sample_rate, spectragram = infer_process(
