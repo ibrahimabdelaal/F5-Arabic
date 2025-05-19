@@ -235,19 +235,12 @@ def remove_silence_edges(audio, silence_threshold=-32):
 
 
 def preprocess_ref_audio_text(ref_audio_orig, ref_text, clip_short=True, show_info=print, device=device):
-    show_info("Converting audio...")
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as f:
-        aseg = AudioSegment.from_file(ref_audio_orig)
-        # Disabled all audio processing - using original audio
-        # No clipping
-        # No silence removal
-        aseg.export(f.name, format="wav")
-        ref_audio = f.name
+    # NO AUDIO PROCESSING AT ALL - just use the original file directly
+    show_info("Using original audio file directly, no processing...")
+    ref_audio = ref_audio_orig
 
-    # Compute a hash of the reference audio file
-    with open(ref_audio, "rb") as audio_file:
-        audio_data = audio_file.read()
-        audio_hash = hashlib.md5(audio_data).hexdigest()
+    # Still need to handle the reference text
+    audio_hash = "dummy_hash_no_processing"
 
     global _ref_audio_cache
     if audio_hash in _ref_audio_cache:

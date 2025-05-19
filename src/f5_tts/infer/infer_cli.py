@@ -12,12 +12,65 @@ from cached_path import cached_path
 from num2words import num2words
 
 from f5_tts.infer.utils_infer import (
-    infer_process,
     load_model,
     load_vocoder,
-    preprocess_ref_audio_text,
     remove_silence_for_generated_wav,
 )
+# Import our custom direct audio processor
+from f5_tts.infer.direct_audio import infer_batch_process
+import f5_tts.infer.utils_infer
+
+# Use the custom batch processor for infer_process
+def infer_process(ref_audio, ref_text, gen_text, model_obj, vocoder, mel_spec_type="vocos", 
+                  progress=None, target_rms=0.1, cross_fade_duration=0.1, 
+                  nfe_step=32, cfg_strength=1.5, sway_sampling_coef=-1, 
+                  speed=1, fix_duration=None, device=None):
+    """
+    Custom wrapper that uses our direct audio processor
+    """
+    gen_text_batches = [gen_text]  # No chunking, just process as one batch
+    print(f"Processing audio directly from: {ref_audio}")
+    print(f"Generating audio in {len(gen_text_batches)} batches...")
+    return infer_batch_process(
+        (ref_audio, None),  # Pass the path directly as a tuple
+        ref_text,
+        gen_text_batches,
+        model_obj,
+        vocoder,
+        mel_spec_type=mel_spec_type,
+        progress=progress,
+        target_rms=target_rms,
+        cross_fade_duration=cross_fade_duration,
+        nfe_step=nfe_step,
+        cfg_strength=cfg_strength,
+        sway_sampling_coef=sway_sampling_coef,
+        speed=speed,
+        fix_duration=fix_duration,
+        device=device,
+    )
+
+# Override preprocess_ref_audio_text to do absolutely nothing with the audio file
+def preprocess_ref_audio_text(ref_audio_orig, ref_text, clip_short=True, show_info=print, device=None):
+    """Override that does nothing to the audio file, just ensures ref_text is properly formatted"""
+    print("Using original audio file directly, with NO preprocessing or temp files")
+    
+    # Format ref_text if needed
+    if not ref_text.strip():
+        print("Warning: Empty reference text provided!")
+        ref_text = " "
+    
+    # Ensure ref_text ends with proper punctuation
+    if not ref_text.endswith(". ") and not ref_text.endswith("。"):
+        if ref_text.endswith("."):
+            ref_text += " "
+        else:
+            ref_text += ". "
+            
+    return ref_audio_orig, ref_text
+
+# Replace the imported function with our custom one
+f5_tts.infer.utils_infer.preprocess_ref_audio_text = preprocess_ref_audio_text
+
 from f5_tts.model import DiT, UNetT
 
 parser = argparse.ArgumentParser(
@@ -130,18 +183,7 @@ if model == "F5-TTS":
         ckpt_file = str(cached_path("hf://Ar-tts-weights/F5-tts-weights/model_507500_8_18.pt"))
         if not vocab_file:
             vocab_file = str(cached_path("hf://IbrahimSalah/F5-TTS-Arabic/vocab.txt"))
-        # Original models commented out for reference
-        # if args.vocoder_name == "vocos":
-        #     repo_name = "F5-TTS"
-        #     exp_name = "F5TTS_Base"
-        #     ckpt_step = 1200000
-        #     ckpt_file = str(cached_path(f"hf://SWivid/{repo_name}/{exp_name}/model_{ckpt_step}.safetensors"))
-        # elif args.vocoder_name == "bigvgan":
-        #     repo_name = "F5-TTS"
-        #     exp_name = "F5TTS_Base_bigvgan"
-        #     ckpt_step = 1250000
-        #     ckpt_file = str(cached_path(f"hf://SWivid/{repo_name}/{exp_name}/model_{ckpt_step}.pt"))
-
+      
 elif model == "E2-TTS":
     model_cls = UNetT
     model_cfg = dict(dim=1024, depth=24, heads=16, ff_mult=4)
@@ -197,7 +239,7 @@ def main_process(ref_audio, ref_text, text_gen, model_obj, mel_spec_type, remove
         gen_text = text.strip()
         
         # Apply Arabic preprocessing - convert numbers to Arabic words
-        gen_text = convert_number_to_text(gen_text)
+        #gen_text = convert_number_to_text(gen_text)
         
         # Add proper Arabic punctuation if missing
         if not gen_text.endswith(".") and not gen_text.endswith("؟") and not gen_text.endswith("!") and not gen_text.endswith("،") and not gen_text.endswith("؛"):
