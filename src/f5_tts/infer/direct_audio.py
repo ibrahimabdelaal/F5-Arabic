@@ -30,9 +30,14 @@ def infer_batch_process(
     """
     if device is None:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+      # Extract the path if it's a tuple (path, _)
+    if isinstance(ref_audio, tuple):
+        audio_path = ref_audio[0]
+    else:
+        audio_path = ref_audio
     
-    print(f"Loading reference audio directly: {ref_audio}")
-    audio, sr = torchaudio.load(ref_audio)
+    print(f"Loading reference audio directly: {audio_path}")
+    audio, sr = torchaudio.load(audio_path)
     
     # Handle stereo to mono conversion
     if audio.shape[0] > 1:

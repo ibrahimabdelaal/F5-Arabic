@@ -27,12 +27,12 @@ def infer_process(ref_audio, ref_text, gen_text, model_obj, vocoder, mel_spec_ty
                   speed=1, fix_duration=None, device=None):
     """
     Custom wrapper that uses our direct audio processor
-    """
+    """   
     gen_text_batches = [gen_text]  # No chunking, just process as one batch
     print(f"Processing audio directly from: {ref_audio}")
     print(f"Generating audio in {len(gen_text_batches)} batches...")
     return infer_batch_process(
-        (ref_audio, None),  # Pass the path directly as a tuple
+        ref_audio,  # Pass the path directly as a string
         ref_text,
         gen_text_batches,
         model_obj,
