@@ -23,7 +23,7 @@ import f5_tts.infer.utils_infer
 # Use the custom batch processor for infer_process
 def infer_process(ref_audio, ref_text, gen_text, model_obj, vocoder, mel_spec_type="vocos", 
                   progress=None, target_rms=0.1, cross_fade_duration=0.1, 
-                  nfe_step=32, cfg_strength=1.5, sway_sampling_coef=-1, 
+                  nfe_step=64, cfg_strength=2, sway_sampling_coef=-1, 
                   speed=1, fix_duration=None, device=None):
     """
     Custom wrapper that uses our direct audio processor
@@ -181,8 +181,7 @@ if model == "F5-TTS":
     if ckpt_file == "":
         # Use Arabic model
         ckpt_file = str(cached_path("hf://Ar-tts-weights/F5-tts-weights/model_507500_8_18.pt"))
-        if not vocab_file:
-            vocab_file = str(cached_path("hf://IbrahimSalah/F5-TTS-Arabic/vocab.txt"))
+        vocab_file = str(cached_path("hf://IbrahimSalah/F5-TTS-Arabic/vocab.txt"))
       
 elif model == "E2-TTS":
     model_cls = UNetT
@@ -237,6 +236,7 @@ def main_process(ref_audio, ref_text, text_gen, model_obj, mel_spec_type, remove
             voice = "main"
         text = re.sub(reg2, "", text)
         gen_text = text.strip()
+        print(f"Text: {gen_text}")
         
         # Apply Arabic preprocessing - convert numbers to Arabic words
         #gen_text = convert_number_to_text(gen_text)
